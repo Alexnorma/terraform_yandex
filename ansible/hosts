@@ -1,0 +1,5 @@
+[nginx_servers]
+nginx_1 ansible_host=158.160.54.218 ansible_user=ubuntu ansible_ssh_private_key=/home/alex/.ssh/react
+[reactjs_server]
+reactjs_1 ansible_host=158.160.52.143 ansible_user=ubuntu ansible_ssh_private_key=/home/alex/.ssh/react
+

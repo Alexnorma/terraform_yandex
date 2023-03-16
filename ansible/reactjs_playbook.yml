@@ -1,0 +1,80 @@
+---
+
+- hosts: reactjs_server
+  vars: 
+    project_path: /var/www
+    repository: https://gitlab.com/entsupml/skillbox-deploy-blue-green.git
+    packeges:
+      - yarn
+      - npm
+      - nodejs
+      - git
+  tasks:
+    - name: "YARN | GPG"
+      apt_key:
+        url: https://dl.yarnpkg.com/debian/pubkey.gpg
+        state: present
+    - name: "YARN | creating file"
+      file:
+        path: /etc/apt/sources.list.d/yarn.list
+        owner: root
+        mode: 0644
+        state: touch
+    - name: "YARN | add string"
+      lineinfile:
+        dest: /etc/apt/sources.list.d/yarn.list
+        regexp: 'deb http://dl.yarnpkg.com/debian/ stable main'
+        line: 'deb http://dl.yarnpkg.com/debian/ stable main'
+        state: present
+    - name: "YARN | Update cache"
+      apt:
+        update_cache: yes
+    - name: "Ensure the packeges |YARN,NPM,NODEJS"
+      apt:
+        pkg: "{{item}}"
+      loop: "{{packeges}}"
+      tags: install_packages 
+    - name: "Set release path"
+      set_fact:
+        release_path: "{{ project_path }}/releases/{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
+    - name: "Create_project_path"
+      file:
+        dest: "{{ project_path }}"
+        mode: 0755
+        recurse: yes
+        state: directory
+    - name: "Create_release_path"
+      file:
+        dest: "{{release_path}}"
+        mode: 0755
+        recurse: yes
+        state: directory
+    - name: "Clone release"
+      file:
+        dest: "{{release_path}}"
+        mode: 0755
+        recurse: yes
+        state: directory
+    - name: "Clone repo"
+      git:
+        repo: "{{repository}}"
+        dest: "{{release_path}}"
+    - name: "Add IP on page"
+      replace:
+        path: "{{release_path}}/src/App.js"
+        regexp: 'Text of revert'
+        replace: '{{ansible_default_ipv4.address}}'
+        backup: yes
+    - name: "PM install"
+      npm:
+        name: pm2
+        global: yes
+    - name: "Install packeges in package.json"
+      yarn:
+        path: "{{release_path}}"
+    - name: "Start ReactAPP"
+      command: "pm2 --name ReactJS start npm -- start"
+      args:
+        chdir: "{{release_path}}"
+      environment:
+        PORT: 80

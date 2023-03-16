@@ -1,0 +1,29 @@
+---
+- hosts: nginx_servers
+  vars:
+    reactjs_host_ip: 192.168.10.5
+    reactjs_host_port: 80		
+  pre_tasks:
+    - name: "install nginx"
+      apt: 
+        update_cache: yes
+        pkg: "nginx"
+
+
+    - name: "Delete nginx_def settings"
+      file:
+        path: "/etc/nginx/sites-enabled/default"
+        state: absent
+  tasks:
+    - name: "Add congig file"
+      template:
+        src: ./templates/nginx.conf.j2
+        dest: /etc/nginx/sites-enabled/nginx.conf
+        force: true
+        owner: root
+        mode: 0644
+      notify: reload_nginx
+  handlers:
+    - name: reload_nginx"
+      service: name=nginx state=reloaded
+        
